@@ -1,0 +1,36 @@
+{% load staticfiles%}
+{% load bootstrap3 %}
+<!DOCTYPE html>
+    <html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="{% static 'bootstrap.min.css' %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}" />
+        <title>TreasureGram</title>
+    </head>
+    <body>
+        <nav class="navbar navbar-default navbar-static-top text-center">
+            <a href="/">
+                <img src="{% static 'images/logo.png' %}" alt="GSM" width="80" height="80">
+            </a></nav>
+    <main class="container" roles="main">
+        
+        <h1>TreasureGram</h1>
+        
+        {% for treasure in treasures %}
+        <div class="treasure panel panel-default {% cycle 'treasure-left' 'treasure-right' %}">
+        <div class="panel-heading">
+            <h2 class="panel-title">{{ treasure.name }} </h2>
+        </div>
+        <div class="panel-body">
+            {{treasure.material}}
+            {% if treasure.value > 0 %}
+                <p> {{ treasure.value }}</p>
+            {% else %}
+                <p> Unknkown </p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    </main>
+    </body>
+</html>
