@@ -2,7 +2,9 @@ FROM python:3.6-alpine3.6
 
 RUN apk add --no-cache --update \
       bash \
+      gcc \
       gettext \
+      musl-dev \
       postgresql-client \
       postgresql-dev
 
@@ -15,4 +17,3 @@ WORKDIR /srv/app
 EXPOSE 8000
 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-

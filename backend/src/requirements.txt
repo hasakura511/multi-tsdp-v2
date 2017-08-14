@@ -1,2 +1,5 @@
 Django==1.11.4
+django-environ==0.4.3
+psycopg2==2.7.3
 pytz==2017.2
+six==1.10.0
