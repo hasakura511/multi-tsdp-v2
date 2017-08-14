@@ -93,3 +93,11 @@ STATIC_ROOT = env('STATIC_ROOT', default=root('static'))
 MEDIA_URL = env('MEDIA_URL', default='/media/')
 
 MEDIA_ROOT = env('MEDIA_ROOT', default=root('media'))
+
+EMAIL_CONFIG = env.email_url(
+    'EMAIL_URL', default='consolemail://')
+
+vars().update(EMAIL_CONFIG)
+
+# Django registration
+ACCOUNT_ACTIVATION_DAYS = 7
