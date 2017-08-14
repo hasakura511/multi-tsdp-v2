@@ -1,0 +1,24 @@
+version: '2'
+
+services:
+  db:
+    image: postgres:9.6-alpine
+    environment:
+      - POSTGRES_DB=tsdp
+      - POSTGRES_PASSWORD=Temp1234
+    volumes:
+      - pgdata:/var/lib/postgresql/data/
+
+  backend:
+    build: ./backend
+    ports:
+      - 8000:8000
+    volumes:
+      - ./backend/src:/srv/app
+    links:
+      - db:db
+    depends_on:
+      - db
+
+volumes:
+  pgdata:

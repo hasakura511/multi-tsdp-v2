@@ -1,0 +1,41 @@
+FROM python:3.6-alpine3.6
+
+COPY ./src/ /srv/app/
+
+WORKDIR /srv/app
+
+RUN apk add --update \
+      postgresql-client \
+    && apk add --virtual .build-deps \
+      gettext \
+      postgresql-dev \
+    && pip install --no-cache-dir -r requirements.txt gunicorn \
+    && python -m compileall -b . \
+    && find . -type f -name "*.py" -delete \
+    && DATABASE_URL="sqlite:////tmp/db.sqlite3" \
+       SECRET_KEY="build-j_5-k0+f$-h_3=0%=h=dmri&5p7)vt_w(kl3s%*%c^72jtn#vs" \
+       EMAIL_URL="consolemail://" \
+       python manage.pyc collectstatic --noinput \
+    && rm -rf /tmp/db.sqlite3 \
+    && runDeps="$( \
+        scanelf --needed --nobanner --recursive /usr/local \
+                | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
+                | sort -u \
+                | xargs -r apk info --installed \
+                | sort -u \
+    )" \
+    && apk add --virtual .rundeps $runDeps \
+    && apk del .build-deps \
+    && rm /var/cache/apk/*
+
+
+COPY ./bin/s6-overlay-amd64.tar.gz /tmp/s6-overlay-amd64.tar.gz
+
+RUN tar xvfz /tmp/s6-overlay-amd64.tar.gz -C / \
+    && rm -f /tmp/s6-overlay-amd64.tar.gz
+
+ENTRYPOINT ["/init"]
+
+EXPOSE 8000
+
+CMD ["gunicorn", "--workers=3", "--bind=0.0.0.0:8000", "tsdp.wsgi:application"]
