@@ -278,6 +278,46 @@ for account in active_symbols:
     saveCharts(df, ylabel=ylabel, xlabel=xlabel, title=title, filename=filename, figsize=(15,50),\
                         lookback=lookback, kind='barh',width=width, twiny=True)
 
+    #ranking heatmap
+    date2=date[:4]+'-'+date[4:6]+'-'+date[6:]
+    df2 = totalsDF[pnl_cols].transpose()
+    matrix=pd.DataFrame(index=df.index)
+    for col in df2.columns:
+        df3=df2[col].sort_values(ascending=False)
+        rank_num=[]
+        for i,x in enumerate(df3.values):
+            if i==0:
+                rank_num.append(i+1)
+                lastval=x
+                #print rank_num, lastval
+            else:
+                if lastval==x:
+                    rank_num.append(rank_num[-1])
+                else:
+                    rank_num.append(rank_num[-1]+1)
+                lastval=x
+                #print rank_num, lastval
+        matrix[col]=pd.Series(data=rank_num, index=df3.index)
+    matrix['avg']=matrix.mean(axis=1)
+    matrix=matrix.sort_values(by=['avg'])
+    fig,ax = plt.subplots(figsize=(15,21))
+    #title = 'Lookback '+str(lookback)+' '+data.index[-lookback-1].strftime('%Y-%m-%d')+' to '+data.index[-1].strftime('%Y-%m-%d')
+    title='{} Heatmap Lookback {}: {} to {}'.format(account,len(df2.columns), df2.columns[0], df2.columns[-1])
+    ax.set_title(title)
+    sns.heatmap(ax=ax, data=matrix)
+    plt.yticks(rotation=0) 
+    plt.xticks(rotation=90) 
+    filename=pngPath+date2+'_'+account+'_ranking_heatmap.png'
+    plt.savefig(filename, bbox_inches='tight')
+    print 'Saved',filename
+    if debug and showPlots:
+        plt.show()
+    plt.close()
+    tablename=account+'_ranking_heatmap'
+    matrix.to_sql(name=tablename,con=readChartConn, index=True,
+                if_exists='replace')
+    print 'Wrote', tablename,'to db_charts.sqlite3'
+    
 
 av_cumper_df=pd.DataFrame()
 for account in active_symbols.keys():
@@ -405,20 +445,23 @@ for account in active_symbols.keys():
     combinedranking['Score']=combinedranking.sum(axis=1)
     combinedranking=combinedranking.ix[listofsystems].sort_values(by='Score', ascending=True)
     combinedranking.index=[x+' ({})'.format(str(len(combinedranking.index)-i)) for i,x in enumerate(combinedranking.index)]
-    combinedranking.plot(ax=ax, kind='barh', figsize=(12,24))
-    plt.ylabel('Ranking', size=24)
-    plt.xlabel('Z Score', size=24)
-    #ax.set_xticklabels(xaxis_labels)
-    plt.title(account+' Scores as of '+date2, size=24)
-    #ax2.legend(loc='lower left', prop={'size':16})
-    plt.legend(loc='upper center', prop={'size':18}, bbox_to_anchor=(.4, -0.03),
-              fancybox=True, shadow=True, ncol=4)
-    filename=pngPath+date+'_'+account+'_'+'ranking_zscores.png'
-    plt.savefig(filename, bbox_inches='tight')
-    print 'Saved',filename
-    if debug and showPlots:
-        plt.show()
-    plt.close()
+    if combinedranking.shape[0]>0:
+        combinedranking.plot(ax=ax, kind='barh', figsize=(12,24))
+        plt.ylabel('Ranking', size=24)
+        plt.xlabel('Z Score', size=24)
+        #ax.set_xticklabels(xaxis_labels)
+        plt.title(account+' Scores as of '+date2, size=24)
+        #ax2.legend(loc='lower left', prop={'size':16})
+        plt.legend(loc='upper center', prop={'size':18}, bbox_to_anchor=(.4, -0.03),
+                  fancybox=True, shadow=True, ncol=4)
+        filename=pngPath+date+'_'+account+'_'+'ranking_zscores.png'
+        plt.savefig(filename, bbox_inches='tight')
+        print 'Saved',filename
+        if debug and showPlots:
+            plt.show()
+        plt.close()
+    else:
+        print 'combined ranking for {} returned zero datapoints'.format(account)
     
 
 print 'Elapsed time: ', round(((time.time() - start_time)/60),2), ' minutes ', dt.now()
