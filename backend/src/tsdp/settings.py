@@ -99,5 +99,10 @@ EMAIL_CONFIG = env.email_url(
 
 vars().update(EMAIL_CONFIG)
 
+# Celery
+BROKER_URL = env('CELERY_BROKER_URL')
+
+CELERY_RESULT_BACKEND = env('CELERY_BROKER_URL')
+
 # Django registration
 ACCOUNT_ACTIVATION_DAYS = 7
