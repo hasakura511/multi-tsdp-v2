@@ -20,7 +20,10 @@ class Instrument(models.Model):
     """Instrument model."""
 
     name = models.CharField(_('name'), max_length=254, unique=True)
+    exchange = models.CharField(_('exchange'), max_length=32, unique=True)
     symbol = models.CharField(_('symbol'), max_length=32, unique=True)
+    securure_type = models.CharField(_('secure type'), max_length=32, unique=True)
+    currency = models.CharField(_('currency'), max_length=32, unique=True)
     group = models.ForeignKey(Group)
     decimal_places = models.IntegerField(_('decimal places'), default=5)
     subscribed = models.BooleanField(_('subscribed'), db_index=True, default=True)
