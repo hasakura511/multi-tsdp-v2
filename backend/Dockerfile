@@ -6,13 +6,17 @@ RUN apk add --no-cache --update \
       gettext \
       musl-dev \
       postgresql-client \
-      postgresql-dev
+      postgresql-dev \
+      g++
 
 COPY ./src/requirements*.txt /srv/app/
 
 RUN pip install --no-cache-dir -r /srv/app/requirements.txt -r /srv/app/requirements-dev.txt
 
 WORKDIR /srv/app
+ENV PYTHONPATH $PYTHONPATH:/srv/app
+ENV DJANGO_SETTINGS_MODULE tsdp.settings
+
 
 EXPOSE 8000
 
