@@ -107,3 +107,8 @@ CELERY_RESULT_BACKEND = env('CELERY_BROKER_URL')
 
 # Django registration
 ACCOUNT_ACTIVATION_DAYS = 7
+
+# Interactive Broker Gateway
+IB_HOST = '127.0.0.1'
+IB_PORT = 4001
+IB_CLIENT_ID = '999'
