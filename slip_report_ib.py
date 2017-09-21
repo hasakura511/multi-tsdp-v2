@@ -152,6 +152,8 @@ if lastExecutions.shape[0] >0:
         
         if system.shape[0]<1:
             sys.exit('{} not in signals_live'.format(csidate))
+        if futuresDF.shape[0]<1:
+            sys.exit('{} not in futuresDF_results'.format(csidate))
         selection=system.selection[0]
         if os.path.isfile(timetablePath+str(csidate)+'.csv'):
             timetable = pd.read_csv(timetablePath+str(csidate)+'.csv', index_col=0)

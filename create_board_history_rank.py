@@ -134,9 +134,9 @@ web_accountnames={
                     'v4mini':'100K',
                     'v4micro':'50K',
                     }
-lookback_short=1
-lookback_mid=2
-lookback=20
+lookback_short=2
+lookback_mid=1
+lookback=3
 benchmark_sym='ES'
 if len(sys.argv)==1:
     debug=True
@@ -145,9 +145,9 @@ else:
     
 if debug:
     mode = 'replace'
-    savePlots=False
+    savePlots=True
     #marketList=[sys.argv[1]]
-    showPlots=False
+    showPlots=True
     dbPath='./data/futures.sqlite3' 
     dbPath2='./data/futures.sqlite3' 
     dbPathWeb = './web/tsdp/db.sqlite3'
@@ -266,7 +266,6 @@ for account in qtydict.keys():
     componentsdict = eval(selectionDF[account].values[0])
     futuresDF_boards ={}
     signalsDict={}
-    signalsDict2={}
     totalsDict = {}
     for prev,current in datetup:
         currentdate=current[0]
@@ -278,6 +277,7 @@ for account in qtydict.keys():
         futuresDF_current=add_missing_rows(pd.read_sql('select * from (select * from %s where Date=%s\
                         order by timestamp ASC) group by CSIsym' %(current[1], current[0]),\
                         con=readConn,  index_col='CSIsym'), current, all_syms)
+
 
 
         componentsignals=futuresDF_prev[corecomponents]
@@ -295,21 +295,6 @@ for account in qtydict.keys():
         benchmark_signals=futuresDF_prev['None'].copy()
         benchmark_signals.ix[benchmark_sym]=1
         signalsDict[currentdate]['benchmark']=benchmark_signals
-        
-        
-        '''hotfix for signal display'''
-        componentsignals2=futuresDF_current[corecomponents]
-
-        #votingSystems = { key: componentsdict[key] for key in [x for x in componentsdict if is_int(x)] }
-        #add voting systems
-        signalsDict2[currentdate]={key: to_signals(futuresDF_current[componentsdict[key]].sum(axis=1)) for key in votingSystems.keys()}
-        #add anti-voting systems
-        signalsDict2[currentdate].update({'Anti-'+key: to_signals(futuresDF_current[componentsdict[key]].sum(axis=1), Anti=True)\
-                                                for key in votingSystems.keys()})
-        #check (signalsDict[key]['1']+signalsDict[key]['Anti-1']).sum()
-        signalsDict2[currentdate].update({ reversecomponentsdict[key]: componentsignals2[key] for key in componentsignals2})
-
-        signalsDict2[currentdate]['benchmark']=benchmark_signals
         
         #append signals to each board
         totalsDict[currentdate]=pd.DataFrame()
@@ -381,8 +366,8 @@ for account in qtydict.keys():
     totalsDF=totalsDF.sort_index().dropna()
     totals_accounts[account]=totalsDF
     tablename = 'totalsDF_board_'+account
-    totalsDF.to_sql(name=tablename,con=writeConn, index=True, if_exists=mode, index_label='Date')
-    print '\nSaved', tablename,'from',datetup[0][1],'to',currentdate,'to', dbPath
+    #totalsDF.to_sql(name=tablename,con=writeConn, index=True, if_exists=mode, index_label='Date')
+    #print '\nSaved', tablename,'from',datetup[0][1],'to',currentdate,'to', dbPath
 
     pnlDF=pd.DataFrame()
     for key in futuresDF_boards.keys():
@@ -391,18 +376,18 @@ for account in qtydict.keys():
     pnlDF=pnlDF.sort_index().dropna()
     tablename = 'PNL_board_'+account
     pnl_accounts[account]=pnlDF
-    pnlDF.to_sql(name= tablename, if_exists=mode, con=writeConn, index=True, index_label='Date')
-    filename = savePath+tablename+'_'+str(currentdate)+'.csv'
-    pnlDF.to_csv(filename, index=True)
-    print 'Saved', tablename,'from',datetup[0][1],'to',currentdate,'to', dbPath,'and', filename
+    #pnlDF.to_sql(name= tablename, if_exists=mode, con=writeConn, index=True, index_label='Date')
+    #filename = savePath+tablename+'_'+str(currentdate)+'.csv'
+    #pnlDF.to_csv(filename, index=True)
+    #print 'Saved', tablename,'from',datetup[0][1],'to',currentdate,'to', dbPath,'and', filename
     boards_dict[account]=futuresDF_boards.copy()
 
 #for customize signals
 signalsDF=pd.DataFrame(signalsDict[currentdate])
 signalsDF['Date']=currentdate
 tablename='last_signals'
-signalsDF.to_sql(name=tablename, if_exists=mode, con=writeWebChartsConn, index=True, index_label='CSIsym')
-print 'Saved', tablename, 'for', currentdate
+#signalsDF.to_sql(name=tablename, if_exists=mode, con=writeWebChartsConn, index=True, index_label='CSIsym')
+#print 'Saved', tablename, 'for', currentdate
 
 #for customize chip
 market_pnl_by_date=boards_dict['v4futures']
@@ -546,19 +531,11 @@ def createRankingChart(ranking, account, line, title, filename):
     plt.close()
     
     #pnl text
-    prevdate=sorted(signalsDict2.keys())[-2]
-    prevsig=signalsDict2[prevdate][line].astype(int).copy()
-    prevsig=(signalsDict2[prevdate][line]*quantity).astype(int).copy()
-    #prevsig[prevsig == -1] = 'SHORT'
-    #prevsig[prevsig == 1] = 'LONG'
-    #prevsig[prevsig == 0] = 'OFF'
     pnl=market_pnl_by_date[currentdate]['PNL_'+line].ix[active_symbols[account]].astype(int)
+    pnl.index=[re.sub(r'\(.*?\)', '', futuresDict.ix[sym].Desc) for sym in pnl.index]
     pnl['Total']=pnl.sum()
     pnl.name='{} as of MOC {}'.format(pnl.name,currentdate)
-    prev_pnl=pd.DataFrame({'Qty':prevsig.ix[pnl.index], pnl.name:pnl})
-    prev_pnl.index=[re.sub(r'\(.*?\)', '', futuresDict.ix[sym].Desc) if sym in futuresDict.index else 'Total' for sym in pnl.index ]    
-    text='<br>'+pd.DataFrame(prev_pnl).to_html()
-    
+    text='<br>'+pd.DataFrame(pnl).to_html()
     
     lookback_name=str(lookback)+'Day Lookback'
     text+='<br>'+lookback_name+': '+', '.join([index+' '+str(round(ranking.ix[index].ix[lookback_name],1))+'%' for index in pair])
@@ -577,10 +554,9 @@ def createRankingChart(ranking, account, line, title, filename):
 
     
     return text
-prev_signals={}
+
 performance_chart_dict={} 
 for account in totals_accounts:
-    prev_signals[account]={}
     performance_chart_dict[account]=pd.DataFrame()
     performance_dict[account]={}
     quantity=futuresDF_current[qtydict[account]].copy()
@@ -593,12 +569,19 @@ for account in totals_accounts:
     chart_list+=[[x[0],x[1],'benchmark'] for x in componentpairs]
     benchmark=totalsDF['PNL_benchmark'].copy()
     benchmark_xaxis_label=[dt.strptime(str(x),'%Y%m%d').strftime('%Y-%m-%d') for x in benchmark.index]
+    date=benchmark_xaxis_label[-1]
     nrows=benchmark.shape[0]
     font = {
             'weight' : 'normal',
             'size'   : 22}
 
     matplotlib.rc('font', **font)
+    line='RiskOn'
+    title= line+' Ranking from '+benchmark_xaxis_label[0]+' to '+benchmark_xaxis_label[-1]
+    filename=pngPath+date+'_'+account+'_'+line.replace('/','')+'_ranking2.png'
+    text3 = createRankingChart(perchgDict[account], account, line, title, filename)
+    
+    '''
     for cl in chart_list:
         fig = plt.figure(0, figsize=(10,8))
         num_plots = len(cl)
@@ -644,15 +627,9 @@ for account in totals_accounts:
                     #component
                     text=component_text[line]
                     #print line, text, filename2
-            #signals dict is one day behind
-            signals=(signalsDict2[currentdate][line]*quantity).astype(int).copy()
+            signals=(signalsDict[currentdate][line]*quantity).astype(int).copy()
             signals.index=[re.sub(r'\(.*?\)', '', futuresDict.ix[sym].Desc) for sym in signals.index]
             signals=pd.Series(conv_sig(signals), index=signals.index).to_dict()
-            prevdate=sorted(signalsDict2.keys())[-2]
-            prevsig=(signalsDict2[prevdate][line]*quantity).astype(int).copy()
-            prevsig.index=[re.sub(r'\(.*?\)', '', futuresDict.ix[sym].Desc) for sym in prevsig.index]
-            prevsig=pd.Series(conv_sig(prevsig), index=prevsig.index).to_dict()    
-            prev_signals[account][line]={'signals':prevsig}
             text2='Results shown reflect daily close-to-close timesteps, only applicable to MOC orders. All results are hypothetical. Excludes slippage and commission costs.'
             filename=pngPath+date+'_'+account+'_'+line.replace('/','')+'_ranking.png'
             filename3=date+'_'+account+'_'+line.replace('/','')+'_ranking.png'
@@ -671,7 +648,9 @@ for account in totals_accounts:
             plt.show()
         plt.close()
     performance_chart_dict[account].index=benchmark_xaxis_label
+    '''
 
+'''
 account_values={}
 #create account value charts
 for account in totals_accounts:
@@ -846,12 +825,9 @@ performance_dict_by_box2={}
 for key in performance_dict_by_box:
     newdict={}
     signals_cons=pd.DataFrame()
-    signals_cons_prev=pd.DataFrame()
     for account in performance_dict_by_box[key]:
         newdict[account+'_filename']=performance_dict_by_box[key][account]['filename']
         signals_cons=signals_cons.append(pd.Series(performance_dict_by_box[key][account]['signals'], name=account))
-        if key != 'account_value':
-            signals_cons_prev=signals_cons_prev.append(pd.Series(prev_signals[account][key]['signals'], name=account))
         newdict[account+'_rank_filename']=performance_dict_by_box[key][account]['rank_filename']
         newdict[account+'_rank_text']=performance_dict_by_box[key][account]['rank_text']
         if key=='account_value':
@@ -869,14 +845,7 @@ for key in performance_dict_by_box:
         signals_cons.index=['<a href="/static/images/v4_'+[futuresDict.index[i] for i,desc in enumerate(futuresDict.Desc)\
                                     if re.sub(r'-[^-]*$','',x) in desc][0]+'_BRANK.png" target="_blank">'+x+'</a>' for x in signals_cons.index]
         signals_cons.index.name=key
-        signals_cons_prev=signals_cons_prev.transpose()
-        signals_cons_prev.columns=[web_accountnames[x] for x in signals_cons_prev.columns]
-        signals_cons_prev.index=['<a href="/static/images/v4_'+[futuresDict.index[i] for i,desc in enumerate(futuresDict.Desc)\
-                                    if re.sub(r'-[^-]*$','',x) in desc][0]+'_BRANK.png" target="_blank">'+x+'</a>' for x in signals_cons_prev.index]
-        signals_cons_prev.index.name=key
-        
         newdict['signals']= signals_cons[['50K', '100K', '250K']].to_html(escape=False)
-        newdict['signals']+= '<br>Signals as of {} <br>'.format(prevdate)+signals_cons_prev[['50K', '100K', '250K']].to_html(escape=False)
     else:
         newdict['signals']=''
     performance_dict_by_box2[key]=newdict
@@ -909,139 +878,7 @@ for account in account_values:
     account_values[account].to_sql(name=tablename,con=writeWebChartsConn, index=True, if_exists='replace',\
                     index_label='Date')
     print 'saved',tablename, 'to',dbPathWebCharts
-
-
-#signals list
-for d in sorted(signalsDict2.keys())[-1:]:
-    print 'signals charts for', d
-    d2=str(d)[:4]+'-'+str(d)[4:6]+'-'+str(d)[6:]
-    keys=signalsDict2[d].keys()
-    voting_keys=sorted([x.split('Anti-')[1] for x in keys if 'Anti-' in x and is_int(x.split('Anti-')[1])], key=int)
-    anti_voting_keys=['Anti-'+x for x in voting_keys]
-    component_keys=[x for x in keys if x not in voting_keys and x not in anti_voting_keys]
-    component_keys.remove('Off')
-    component_keys.remove('benchmark')
-    #component_keys=sorted(component_keys)
-    component_keys=['Custom',
-     'RiskOn',
-     'HighestEquity',
-     '50/50',
-     'LowestEquity',
-     'RiskOff',
-     'Seasonality',
-     'Previous',
-     #'Anti-Custom',
-     #'Anti-Previous',
-     #'Anti-Seasonality',
-     #'Anti50/50',
-     #'AntiHighestEquity',
-     #'AntiLowestEquity'
-     ]
-    cmap = sns.diverging_palette(350, 120, sep=2, as_cmap=True)
     
-    
-    for l,name in [(component_keys,'Components'), (voting_keys,'Voting'), (anti_voting_keys,'Antivoting')]:
-        df=pd.DataFrame()
-        for k in l:
-            #print k
-            signalsDict2[d][k].name=k
-            df=pd.concat([df, signalsDict2[d][k]],axis=1)
-        df=df.ix[futuresDict.ix[df.index].sort_values(by=['Group','Desc']).index]
-        desc_list=futuresDict.ix[df.index].Desc.values
-        idx2=futuresDF_current.ix[df.index].LastPctChg.values*100
-        idx1=[re.sub(r'\(.*?\)', '', desc) for desc in desc_list]
-        df.index=[x+' '+str(round(idx2[i],2))+'%' for i,x in enumerate(idx1)]
-        fig,ax = plt.subplots(figsize=(15,15))
-        #title = 'Lookback '+str(lookback)+' '+data.index[-lookback-1].strftime('%Y-%m-%d')+' to '+data.index[-1].strftime('%Y-%m-%d')
-        title='{} {} Signals Heatmap'.format(d, name)
-        ax.set_title(title)
-        sns.heatmap(ax=ax, data=df,cmap=cmap)
-        plt.yticks(rotation=0) 
-        plt.xticks(rotation=90) 
-        filename=pngPath+d2+'_'+name+'_heatmap.png'
-        plt.savefig(filename, bbox_inches='tight')
-        print 'Saved',filename
-        if debug and showPlots:
-            plt.show()
-        plt.close()
-
-
-#last signal accuracy by market by system
-prev_signals=pd.DataFrame()
-prev_acc=pd.DataFrame()
-for sys in signalsDict2[prev[0]]:
-    series=signalsDict2[prev[0]][sys]
-    series.name=sys
-    prev_signals=pd.concat([prev_signals,series], axis=1)
-        
-        
-
-for col in prev_signals:
-    #print col
-    acc=pd.DataFrame(index=prev_signals[col].index)
-    nonzero=prev_signals[col][prev_signals[col] !=0].copy()
-    correct=nonzero==futuresDF_current.ACT.ix[nonzero.index]
-    
-    for sym in acc.index:
-        if sym in correct.index:
-            signal=prev_signals[col].ix[sym]
-            if correct.ix[sym]:
-                #correct long 2
-                if signal>0:
-                    acc.set_value(sym,col,2)
-                #correct short -2
-                elif signal<0:
-                    acc.set_value(sym,col,-2)
-                
-            else:
-                #incorrect long 1
-                if signal>0:
-                    acc.set_value(sym,col,1)
-                #incorrect short -1
-                if signal<0:
-                    acc.set_value(sym,col,-1)
-        else:
-            #off 0
-            acc.set_value(sym,col,0)
-    prev_acc=pd.concat([prev_acc,acc],axis=1)
-    
-prev_acc=prev_acc.ix[futuresDict.ix[prev_acc.index].sort_values(by=['Group','Desc']).index]
-
-
-cmap = sns.diverging_palette(0, 255, sep=2, as_cmap=True)
-for l,name in [(component_keys,'Components'), (voting_keys,'Voting'), (anti_voting_keys,'Antivoting')]:
-    df=prev_acc[l]
-
-    for account in performance_dict:
-        df2=df.ix[active_symbols[account]].copy()
-        colnames=[]
-        for col in df2.columns:
-            nonzero=df2[col][df2[col]!=0]
-            if len(nonzero)>0:
-                acc= str(round(float(len(nonzero[abs(nonzero)==2]))/len(nonzero)*100,1))+'%'
-            else:
-                acc='0%'
-            colnames.append(col+' '+acc)
-        df2.columns=colnames
-        
-        desc_list=futuresDict.ix[df2.index].Desc.values
-        idx2=futuresDF_current.ix[df2.index].LastPctChg.values*100
-        idx1=[re.sub(r'\(.*?\)', '', desc) for desc in desc_list]
-        df2.index=[x+' '+str(round(idx2[i],2))+'%' for i,x in enumerate(idx1)]
-        
-        fig,ax = plt.subplots(figsize=(15,15))
-        #title = 'Lookback '+str(lookback)+' '+data.index[-lookback-1].strftime('%Y-%m-%d')+' to '+data.index[-1].strftime('%Y-%m-%d')
-        title='{} {} {} Signals Accuracy Heatmap (light-incorrect, dark-correct, blue-long, red-short)'.format(account, prev[0], name)
-        ax.set_title(title)
-        sns.heatmap(ax=ax, data=df2,cmap=cmap)
-        plt.yticks(rotation=0) 
-        plt.xticks(rotation=90) 
-        filename=pngPath+d2+'_'+account+'_'+name+'_accuracy_heatmap.png'
-        plt.savefig(filename, bbox_inches='tight')
-        print 'Saved',filename
-        if debug and showPlots:
-            plt.show()
-        plt.close()
-
 print 'Elapsed time: ', round(((time.time() - start_time)/60),2), ' minutes ', dt.now()
 
+'''
