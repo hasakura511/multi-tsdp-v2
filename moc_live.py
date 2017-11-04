@@ -103,6 +103,7 @@ if len(sys.argv)==1:
     csiDataPath=  'D:/ML-TSDP/data/csidata/v4futures2/'
     csiDataPath2=  'D:/ML-TSDP/data/csidata/v4futures3_debug/'
     csiDataPath3=  'D:/ML-TSDP/data/csidata/v4futures4_debug/'
+    csiDataPath4=  'D:/ML-TSDP/data/csidata/v4futures_last_debug/'
     signalPathDaily =  'D:/ML-TSDP/data/signals/'
     signalPathMOC =  'D:/ML-TSDP/data/signals2/'
     logging.basicConfig(filename='C:/logs/broker_live_'+dt.now().strftime('%Y%m%d-%H%M%S')+'.log',level=logging.DEBUG)
@@ -142,6 +143,12 @@ else:
     else:
         post_processing=False
 
+
+    if sys.argv[1]=='0' and sys.argv[2]=='0' and sys.argv[3]=='1' and sys.argv[4]=='0':
+        get_lastquotes=True
+    else:
+        get_lastquotes=False
+
     triggertimes = None
     #triggertime = 30 #mins
     dbPath=dbPath2='./data/futures.sqlite3'
@@ -163,6 +170,7 @@ else:
     csiDataPath=  './data/csidata/v4futures2/'
     csiDataPath2=  './data/csidata/v4futures3/'
     csiDataPath3=  './data/csidata/v4futures4/'
+    csiDataPath4=  './data/csidata/v4futures_last/'
     signalPathDaily =  './data/signals/'
     signalPathMOC =  './data/signals2/'
     logging.basicConfig(filename='/logs/broker_live_'+dt.now().strftime('%Y%m%d-%H%M%S')+'.log',level=logging.DEBUG)
@@ -690,9 +698,11 @@ def refresh_all_histories(execDict):
         data = pd.DataFrame({}, columns=['Date','Open','High','Low','Close','Volume']).set_index('Date')
         tickerId=random.randint(100,9999)
         contract = execDict[sym][2]
-        print sym, 'getting data from IB'
-        data = client.get_history(endDateTime, contract, whatToShow, data ,filename,tickerId, minDataPoints, durationStr, barSizeSetting, formatDate=1)
-        data.to_csv(csiDataPath2+feeddata.ix[sym].CSIsym2+'.csv', index=True)
+        print sym, 'getting data from IB',
+        data = client.get_history(endDateTime, contract, whatToShow, data ,None,tickerId, minDataPoints, durationStr, barSizeSetting, formatDate=1)
+        filename=csiDataPath4+feeddata.ix[sym[:-8]].CSIsym2+'.csv'
+        data.to_csv(filename, index=True)
+        print 'saved', filename
         
 def refresh_history(sym, execDict):
     global client
@@ -1185,7 +1195,17 @@ if __name__ == "__main__":
             tries+=1
             if tries==5:
                 sys.exit('failed 5 times to get contract info')
-                
+    
+    if get_lastquotes:
+        try:
+            refresh_all_histories(execDict)
+        except Exception as e:
+            #print e
+            slack.notify(text='get_timetable: '+str(e), channel=slack_channel, username="ibot", icon_emoji=":robot_face:")
+            traceback.print_exc()
+        print 'Elapsed time: ', round(((time.time() - start_time)/60),2), ' minutes ', dt.now()
+        sys.exit('get_lastquotes')
+
     if refresh_timetable:
         try:
             timetable = get_timetable(contractsDF)

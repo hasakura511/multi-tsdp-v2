@@ -9,6 +9,11 @@
 {% block content %}
 <base href="/">
 
+<ul><center><h1>Current PNL</h1></center><br><center>
+<center><a href="static/public/images/{{ date }}_v4mini_current_total_pnl.png"><img src="static/public/images/{{ date }}_v4mini_current_total_pnl.png"  width=800 height=800></a></center>
+<center><a href="static/public/images/{{ date }}_v4futures_current_total_pnl.png"><img src="static/public/images/{{ date }}_v4futures_current_total_pnl.png"  width=800 height=800></a></center>
+<center><a href="static/public/images/{{ date }}_v4micro_current_total_pnl.png"><img src="static/public/images/{{ date }}_v4micro_current_total_pnl.png"  width=800 height=800></a></center>
+
 {% for name, date2 in accounts.items %}
     <center><h1>{{ name }} Accuracy Rankings</h1></center><br><center>
     <center><a href="static/images/{{ date2 }}_{{ name }}_DayAccuracybySystem.png"><img src="static/images/{{ date2 }}_{{ name }}_DayAccuracybySystem.png"  width=900 height=1800></a></center>
