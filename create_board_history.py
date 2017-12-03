@@ -33,6 +33,11 @@ import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter, WeekdayLocator,DayLocator,MO, TU, WE, TH, FR, SA, SU,\
                                             MonthLocator, MONDAY, HourLocator, date2num
 
+import slackweb
+#fulltimestamp=datetime.datetime.now().strftime('%Y%m%d_%H_%M_%S')
+slackhook='https://hooks.slack.com/services/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'
+slack = slackweb.Slack(url=slackhook)
+slack_channel="#logs"
 start_time = time.time()
 
     
@@ -416,7 +421,13 @@ IB2CSI_multiplier_adj={
 lastquotes=pd.DataFrame()
 futuresDict2=futuresDict.ix[futuresDF_current.index].reset_index().set_index('Filename')
 for sym in futuresDict2.index:
-    lastquote=pd.read_csv(lastquotePath+sym+'.csv').iloc[-1]
+    try:
+        lastquote=pd.read_csv(lastquotePath+sym+'.csv').iloc[-1]
+    except Exception as e:
+        #print e
+        slack.notify(text='pd.read_csv(lastquotePath+sym+.csv).iloc[-1]: '+str(e), channel=slack_channel, username="ibot", icon_emoji=":robot_face:")
+        traceback.print_exc()
+        
     lastquote.name=futuresDict2.ix[sym].CSIsym
     if sym in IB2CSI_multiplier_adj.keys():
         lastquote2=IB2CSI_multiplier_adj[sym]*lastquote[['Open','High','Low','Close']]

@@ -4,6 +4,7 @@ from os import listdir
 from os.path import isfile, join
 import random
 import sys
+from shutil import copyfile
 from subprocess import Popen, PIPE, check_output
 import pandas as pd
 import numpy as np
@@ -1221,8 +1222,43 @@ if __name__ == "__main__":
         if delta.days >1 or (delta.days ==1 and dt.today().day in [2,3,4,5]):
             slack.notify(text=txt, channel=slack_channel, username="ibot", icon_emoji=":robot_face:")
 
+        currentdate=timetable.columns[0]
+        print timetable[currentdate]
+        if timetable[currentdate].isnull().any():
+            #load previous file.
+            dates=sorted([int(x.split('.csv')[0]) for x in listdir(timetablePath) if is_int(x.split('.csv')[0])])
+            if int(currentdate) in dates:
+                dates.remove(int(currentdate))
+            lastdate=str(dates[-1])
+            src=timetablePath+lastdate+'.csv'
+            dest=timetablePath+currentdate+'.csv'
+            #copyfile(src,dest)
+            timetable2=pd.read_csv(src, index_col=0)
+            dates2=[x for x in timetable2.columns if int(x)>=int(currentdate)]
+            timetable2=timetable2[dates2]
+            if timetable2[currentdate].isnull().any():
+                #copy over the next trigger times from the next date.
+                print 'copying data from {} to {} for nans'.format(dates2[1], currentdate)
+                timetable2[currentdate][timetable[currentdate].isnull()]=timetable[dates2[1]][timetable[currentdate].isnull()]
+                if timetable2[currentdate].isnull().any():
+                    slack.notify(text='there\'s still nans...', channel=slack_channel, username="ibot", icon_emoji=":robot_face:")
+            
+            timetable2.to_csv(dest, index=True)
+            txt='nans in timetable for {}. Copied {} to {}.'.format(currentdate, src, dest)
+            print txt
+            slack.notify(text=txt, channel=slack_channel, username="ibot", icon_emoji=":robot_face:")
+            print 'saved', dest
+            timetable2['Date']=csidate
+            timetable2['timestamp']=int(calendar.timegm(dt.utcnow().utctimetuple()))
+            try:
+                timetable2.to_sql(name='timetable', con=writeConn, index=True, if_exists='replace', index_label='Desc')
+            except Exception as e:
+                #print e
+                slack.notify(text='get_timetable: '+str(e), channel=slack_channel, username="ibot", icon_emoji=":robot_face:")
+                traceback.print_exc()
 
-        '''
+
+            '''
         #dont do this because it will mess up account values timing.
         ib_portfolio=get_ibfutpositions(portfolioPath)
         print ib_portfolio
