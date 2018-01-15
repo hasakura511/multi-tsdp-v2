@@ -1,4 +1,4 @@
-ibsym,Desc,filename,ibexch,c2sym,ibtype,ibcur,CSImultiplier,IB2CSI_mult,CSIsym2,CSIsym,triggertime,max_margin,MaintMargin_Exchange,InitMarginReq_IB,MaintMarginReq_IB,IB2CSI,Timezone,Months,MultDesc,Rate,Group,Subscribed,signals_RIskOn,signals_Excess
+ibsym,Desc,filename,ibexch,c2sym,ibtype,currency,CSImultiplier,IB2CSI_mult,CSIsym2,CSIsym,triggertime,max_margin,MaintMargin_Exchange,InitMarginReq_IB,MaintMarginReq_IB,IB2CSI,Timezone,Months,MultDesc,Rate,Group,Subscribed,signals_RIskOn,signals_Excess
 AUD,Australian Dollar-CME(Floor+Electronic Combined),AD_B.CSV,GLOBEX,@AD,FUT,USD,100000,0,AD,AD,30,2655.38,1500,2655.38,2124.3,1,CST,HMUZ,100K AUD,USDUSD,currency,TRUE,1,1
 ZL,Soybean Oil-CBT (Floor+Electronic Combined),BO2_B.CSV,ECBOT,@BO,FUT,USD,600,0,BO2,BO,15,825,825,750,600,1,CST,FHKNQUVZ,60K LBS,USDUSD,grain,TRUE,1,1
 GBP,British Pound-CME(Floor+Electronic Combined),BP_B.CSV,GLOBEX,@BP,FUT,USD,62500,0,BP,BP,30,7351.41,2750,7351.41,5881.13,1,CST,HMUZ,62.5K GBP,USDUSD,currency,TRUE,1,1
