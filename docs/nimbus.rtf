@@ -1,0 +1,159 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1561\cocoasubrtf100
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww15880\viewh19280\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 NIMBUS API\
+Runs on Python 3.1 \
+\
+files\
+dictionary file - primary data processing pipeline settings file\
+ATR file - contains daily snapshot created from CSI/IB data\
+Portfolio file - contains ATR+Portfolio Data\
+Signal file - signals for each system\
+PNL file - contains PNL data\
+Ranking Chart File\
+Dashboard File\
+\
+\
+csidata.py\
+ibdata.py\
+data (raw data handler, IB/CSI)\
+\'97> create ATR file/futuresDF .save()\
+\'97-> corrDF\
+\'97> updates dictionary file with margins (must be connected to IB on a zero balance account)\
+\
+portfolio.py\
+account=  \{\
+    'id': "25k-chip",\
+    'display': "25K",\
+    'amount': 50000\
+  \}\
+#initialize the portfolio object with the account info\
+portfolio = Portfolio(account)\
+\
+#creates portfolio\
+portfolio.create()\
+\
+#create relevant data from portfolio\
+fut=Futures()\
+fut.create()\
+\
+#update volatility target\
+portfolio.update_target(fut)\
+\
+#update margins\
+portfolio.update_margin(fut, fut.atr.signals_Excess)\
+\
+#save portfolio as json\
+portfolio.save()\
+\
+#load porfolio\
+portfolio.load(filename)\
+\
+Actions:\
+Create Portfolio\
+initialize Portfolio\'97> portfolio.create()\'97> create Futures object and create()\'97> portfolio.update_target(Futures) \'97>portfolio.save()\
+\
+Update Margins\
+Load Portfolio (load()) \'97> create Futures object and create()\'97> portfolio.update_margin(futures object, signals) \'97> portfolio.save()\
+\
+\
+\
+\
+\
+\
+signals.py\
+\'97>handles signal processors\
+\
+\
+\
+#the input data\
+accounts = [\
+  \{\
+    'id': "25k-chip",\
+    'display': "25K",\
+    'amount': 25000\
+  \},\
+  \{\
+    'id': "50k-chip",\
+    'display': "50K",\
+    'amount': 50000\
+  \},\
+  \{\
+    'id': "100k-chip",\
+    'display': "100K",\
+    'amount': 100000\
+  \},\
+  \{\
+    'id': "150k-chip",\
+    'display': "150K",\
+    'amount': 150000\
+  \}\
+]\
+\
+board_config= [\{"PREVIOUS_1_DAY": \{\
+    "color": "pink",\
+    "position": "left",\
+    "display": "Previous (1 day)"\
+  \}\},\
+  \{"ANTI_PREVIOUS_1_DAY": \{\
+    "color": "indigo",\
+    "position": "left",\
+    "display": "Anti-Previous (1 day)"\
+  \}\},\
+  \{"PREVIOUS_5_DAYS": \{\
+    "color": "yellow",\
+    "position": "right",\
+    "display": "Previous (5 days)"\
+  \}\},\
+  \{"RISK_OFF": \{\
+    "color": "black",\
+    "position": "top",\
+    "display": "Risk Off"\
+  \}\},\
+  \{"RISK_ON": \{\
+    "color": "red",\
+    "position": "top",\
+    "display": "Risk On"\
+  \}\},\
+  \{"LOWEST_EQ": \{\
+    "color": "#f8cd80",\
+    "position": "bottom",\
+    "display": "Lowest Eq."\
+  \}\},\
+  \{"HIGHEST_EQ": \{\
+    "color": "#0049c1",\
+    "position": "bottom",\
+    "display": "Highest Eq."\
+  \}\},\
+  \{"ANTI_HE": \{\
+    "color": "#c25de3",\
+    "position": "bottom",\
+    "display": "Anti-HE"\
+  \}\},\
+  \{"ANTI_50": \{\
+    "color": "#8ec54e",\
+    "position": "bottom",\
+    "display": "Anti-50"\
+  \}\},\
+  \{"SEASONALITY": \{\
+    "color": "#f49535",\
+    "position": "bottom",\
+    "display": "Seasonality"\
+  \}\},\
+  \{"ANTI_SEA": \{\
+    "color": "#3fa3e7",\
+    "position": "bottom",\
+    "display": "Anti-Sea"\
+  \}\},\
+ \{"BLANK": \{\
+    "color": "transparent",\
+    "position": ""\
+  \}\}\
+ ]\
+\
+First step is to add markets to the accounts.\
+}
